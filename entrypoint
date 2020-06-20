@@ -1,0 +1,129 @@
+#!/usr/bin/env php
+<?php
+require_once __DIR__ . '/vendor/autoload.php';
+
+use JsonSchema\Validator;
+use function JmesPath\search;
+
+const CACHE_DIR = __DIR__ . '/cache';
+
+function getConfig(string $file): stdClass
+{
+    static $schema;
+
+    if ($schema === null) {
+        $schema = (object)[
+            '$ref' => 'file://' . __DIR__ . '/schemas/feed.json'
+        ];
+    }
+
+    /** @noinspection PhpUnhandledExceptionInspection */
+    $config = json_decode(
+        file_get_contents($file),
+        false,
+        512,
+        JSON_THROW_ON_ERROR
+    );
+
+    $validator = new Validator();
+    $validator->validate($config, $schema);
+
+    if (!$validator->isValid()) {
+        throw new RuntimeException(
+            sprintf(
+                "The config in %s is invalid: %s",
+                $file,
+                json_encode(
+                    $validator->getErrors(),
+                    JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+                )
+            )
+        );
+    }
+
+    return $config;
+}
+
+function getFeed(string $url, string $siblings): stdClass
+{
+    if (!preg_match('/^https?:/', $url)
+        && !file_exists($url)
+    ) {
+        $url = implode(DIRECTORY_SEPARATOR, [$siblings, $url]);
+    }
+
+    return json_decode(
+        json_encode(
+            simplexml_load_file($url)
+        )
+    );
+}
+
+function project($item, stdClass $projection = null): stdClass
+{
+    if ($projection === null) {
+        $projection = new stdClass();
+
+        foreach (array_keys((array)$item) as $key) {
+            $projection->{$key} = '@';
+        }
+    }
+
+    $result = new stdClass();
+
+    foreach ($projection as $key => $expression) {
+        $result->{$key} = search($expression, $item);
+    }
+
+    return $result;
+}
+
+$pattern = getenv('FEED_PATTERN', false) ?: '/feeds/*.json';
+
+foreach (glob($pattern) as $file) {
+    try {
+        $config = getConfig($file);
+    } catch (RuntimeException $exception) {
+        fwrite(STDERR, $exception->getMessage() . PHP_EOL);
+        continue;
+    }
+
+    if ($config->enabled === false) {
+        fwrite(STDERR, sprintf('[Disabled] %s', $config->name) . PHP_EOL);
+        continue;
+    }
+
+    $feed  = getFeed($config->url, dirname($file));
+    $items = array_reduce(
+        $config->filters ?? [],
+        function (array $carry, string $filter): array {
+            return array_filter(
+                $carry,
+                function ($item) use ($filter): bool {
+                    $result = search($filter, $item);
+
+                    return !empty($result);
+                }
+            );
+        },
+        search($config->documentPath, $feed)
+    );
+
+    $projection = $config->projection ?? null;
+
+    foreach ($items as $item) {
+        $output = json_encode(
+            project($item, $projection),
+            JSON_UNESCAPED_SLASHES
+        );
+
+        $cache = CACHE_DIR . '/' . sha1($output);
+
+        if (file_exists($cache)) {
+            continue;
+        }
+
+        touch($cache);
+        echo $output . PHP_EOL;
+    }
+}

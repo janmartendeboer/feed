@@ -1,0 +1,17 @@
+{
+  "$schema": "../schemas/feed.json",
+  "enabled": false,
+  "name": "Nu.nl",
+  "url": "https://www.nu.nl/rss",
+  "documentPath": "channel.item[*]",
+  "filters": [
+    "!contains(category, 'Sport') && category != 'Sport'"
+  ],
+  "projection": {
+    "title": "title",
+    "url": "guid",
+    "date": "pubDate",
+    "description": "description",
+    "image": "enclosure.\"@attributes\".url"
+  }
+}

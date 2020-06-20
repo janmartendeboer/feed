@@ -1,0 +1,8 @@
+.gitignore
+composer.*
+Dockerfile
+feeds
+examples
+Makefile
+README.md
+cache

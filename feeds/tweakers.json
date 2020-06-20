@@ -1,0 +1,17 @@
+{
+  "$schema": "../schemas/feed.json",
+  "enabled": true,
+  "name": "Tweakers.net Nieuws",
+  "url": "http://feeds.feedburner.com/tweakers/mixed",
+  "documentPath": "channel.item[*]",
+  "projection": {
+    "title": "title",
+    "url": "guid",
+    "date": "pubDate",
+    "description": "description",
+    "image": "'https://tweakers.net/logo.png'"
+  },
+  "filters": [
+    "contains(category, 'Nieuws') || category == 'Nieuws'"
+  ]
+}

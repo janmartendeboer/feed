@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "$id": "https://raw.githubusercontent.com/johmanx10/feed/main/schemas/feeds.json",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "title": "Enabled",
+      "$comment": "Whether the feed will be processed.",
+      "type": "boolean"
+    },
+    "name": {
+      "title": "Name",
+      "$comment": "The unique name for the feed.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "url": {
+      "title": "URL",
+      "$comment": "The URL that points to the feed.",
+      "type": "string",
+      "minLength": 1
+    },
+    "documentPath": {
+      "title": "Document path",
+      "$comment": "JMESPath selector for individual feed items.",
+      "type": "string",
+      "minLength": 1
+    },
+    "filters": {
+      "title": "Filters",
+      "$comment": "Filter out unwanted items.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "title": "Constraint",
+        "$comment": "JMESPath filter constraint.",
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "projection": {
+      "title": "Projection",
+      "$comment": "Determine the structure of the output.",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "title": "Expression",
+        "$comment": "JMESPath expresison.",
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": ["enabled", "name", "url", "documentPath"]
+}
