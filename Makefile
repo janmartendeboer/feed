@@ -44,6 +44,11 @@ build-image: $(DOCKER) $(GIT)
 		--tag $(IMAGE):`$(GIT) rev-parse HEAD` \
 		--tag $(IMAGE):latest \
 		.
+
+promote-image: $(DOCKER) $(GIT)
+	@$(DOCKER) push $(IMAGE):`$(GIT) rev-parse HEAD`;
+	@$(DOCKER) push $(IMAGE):latest;
+
 # PHP dependencies
 composer.json: $(DOCKER)
 	@$(COMPOSER) init \
@@ -77,6 +82,9 @@ update: update-composer
 
 # Build the application
 build: clean install build-image
+
+# Promote the application.
+promote: build promote-image
 
 # Test the application
 test: $(DOCKER)
